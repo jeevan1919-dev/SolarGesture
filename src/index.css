@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    background-color: #030712;
+    color: #f3f4f6;
+  }
+  
+  h1, h2, h3, .font-heading {
+    font-family: 'Orbitron', 'Inter', sans-serif;
+    letter-spacing: 0.05em;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(11, 19, 43, 0.4);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.6);
+}
+
+/* Glassmorphism styling */
+.glass-panel {
+  background: rgba(6, 11, 30, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(72, 229, 194, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(0, 240, 255, 0.04);
+}
+
+.glass-panel-subtle {
+  background: rgba(11, 19, 43, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-accent {
+  background: rgba(28, 37, 65, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 15px rgba(139, 92, 246, 0.15);
+}
+
+/* Neon glow effects */
+.glow-text-cyan {
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.6), 0 0 20px rgba(0, 240, 255, 0.3);
+}
+
+.glow-text-gold {
+  text-shadow: 0 0 12px rgba(253, 184, 19, 0.7), 0 0 25px rgba(253, 184, 19, 0.4);
+}
+
+.glow-text-violet {
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.6), 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+/* Radar pulse animation for gesture tracking */
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.radar-sweep {
+  animation: radar-sweep 4s linear infinite;
+}
