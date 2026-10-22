@@ -35,24 +35,25 @@ export function Planet({
   const moonOrbitRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
 
-  // Generate realistic procedural texture for planet
-  const surfaceTexture = useMemo(() => {
-    return planetTextureGenerator.getTexture(
+  // Authentic NASA high-resolution textures (diffuse, bump, specular, clouds)
+  const textures = useMemo(() => {
+    return planetTextureGenerator.getPlanetTextures(
+      data.id,
       data.surfaceType,
       data.color,
       data.accentColor
     );
-  }, [data.surfaceType, data.color, data.accentColor]);
+  }, [data.id, data.surfaceType, data.color, data.accentColor]);
 
-  // Clouds texture for planets with cloud covers (Earth)
-  const cloudsTexture = useMemo(() => {
-    if (data.hasClouds) {
-      return planetTextureGenerator.getEarthClouds();
+  // Authentic NASA Moon textures for Earth
+  const moonTextures = useMemo(() => {
+    if (data.id === 'earth') {
+      return planetTextureGenerator.getMoonTextures();
     }
     return null;
-  }, [data.hasClouds]);
+  }, [data.id]);
 
-  // Initial random orbit angle offset so planets don't start in a single straight row
+  // Initial random orbit angle offset
   const initialAngle = useMemo(() => Math.random() * Math.PI * 2, []);
 
   // Register position getter for camera focus
@@ -71,7 +72,7 @@ export function Planet({
   }, [data.id, data.orbitDistance, registerPlanetMesh]);
 
   useFrame((_, delta) => {
-    // 1. Orbit revolution around the Sun
+    // 1. Planetary revolution around the Sun
     if (orbitGroupRef.current && !isPaused) {
       orbitGroupRef.current.rotation.y += data.orbitalSpeed * speedMultiplier * delta * 25;
     }
@@ -83,7 +84,7 @@ export function Planet({
 
     // 3. Clouds differential rotation for realistic planetary atmosphere
     if (cloudsMeshRef.current && !isPaused) {
-      cloudsMeshRef.current.rotation.y += data.rotationSpeed * delta * 60;
+      cloudsMeshRef.current.rotation.y += data.rotationSpeed * delta * 58;
     }
 
     // 4. Moon orbit around Earth
@@ -91,6 +92,9 @@ export function Planet({
       moonOrbitRef.current.rotation.y += 0.05 * speedMultiplier * delta * 25;
     }
   });
+
+  // Determine whether planet has a visible atmospheric limb haze
+  const hasAtmosphericHaze = ['earth', 'venus', 'uranus', 'neptune'].includes(data.id);
 
   return (
     <>
@@ -113,7 +117,7 @@ export function Planet({
         <group position={[data.orbitDistance, 0, 0]}>
           {/* Axial Tilt Group */}
           <group rotation={[0, 0, (data.axialTiltDeg * Math.PI) / 180]}>
-            {/* The Realistic Planet Sphere Mesh */}
+            {/* Photorealistic NASA Planetary Sphere */}
             <mesh
               ref={planetMeshRef}
               onClick={(e) => {
@@ -130,57 +134,79 @@ export function Planet({
                 document.body.style.cursor = 'auto';
               }}
             >
-              <sphereGeometry args={[data.radius, 48, 48]} />
+              <sphereGeometry args={[data.radius, 64, 64]} />
               <meshStandardMaterial
-                map={surfaceTexture}
-                roughness={data.category === 'Gas Giant' || data.category === 'Ice Giant' ? 0.4 : 0.8}
-                metalness={0.08}
-                emissive={hovered || isSelected ? data.accentColor : '#000000'}
-                emissiveIntensity={hovered || isSelected ? 0.35 : 0}
+                map={textures.map}
+                bumpMap={textures.bumpMap || undefined}
+                bumpScale={
+                  data.id === 'mercury' ? 0.045 :
+                  data.id === 'mars' ? 0.038 :
+                  data.id === 'venus' ? 0.015 :
+                  data.id === 'earth' ? 0.025 : 0
+                }
+                roughnessMap={textures.specularMap || undefined}
+                roughness={
+                  data.id === 'mercury' ? 0.98 :
+                  data.id === 'mars' ? 0.92 :
+                  data.id === 'venus' ? 0.85 :
+                  data.id === 'earth' ? 0.65 :
+                  data.category === 'Gas Giant' ? 0.55 : 0.50
+                }
+                metalness={
+                  data.id === 'mercury' ? 0.08 :
+                  data.id === 'mars' ? 0.05 : 0.02
+                }
               />
             </mesh>
 
-            {/* Earth's Dynamic Atmosphere Cloud Layer */}
-            {data.hasClouds && cloudsTexture && (
+            {/* Earth's Authentic NASA Cloud Cover Layer */}
+            {data.id === 'earth' && textures.cloudsMap && (
               <mesh ref={cloudsMeshRef}>
-                <sphereGeometry args={[data.radius * 1.025, 40, 40]} />
+                <sphereGeometry args={[data.radius * 1.015, 64, 64]} />
                 <meshStandardMaterial
-                  map={cloudsTexture}
+                  map={textures.cloudsMap}
                   transparent
-                  opacity={0.75}
+                  opacity={0.82}
                   blending={THREE.NormalBlending}
                   depthWrite={false}
                 />
               </mesh>
             )}
 
-            {/* Atmosphere / Fresnel Rim Glow Layer */}
-            <mesh>
-              <sphereGeometry args={[data.radius * 1.05, 32, 32]} />
-              <meshBasicMaterial
-                color={data.glowColor}
-                transparent
-                opacity={hovered || isSelected ? 0.4 : 0.15}
-                blending={THREE.AdditiveBlending}
-                side={THREE.BackSide}
-              />
-            </mesh>
+            {/* Delicate, Photorealistic Atmospheric Rayleigh Limb Haze (Earth/Venus/Ice Giants) */}
+            {hasAtmosphericHaze && (
+              <mesh>
+                <sphereGeometry args={[data.radius * 1.018, 48, 48]} />
+                <meshBasicMaterial
+                  color={data.id === 'earth' ? '#5FA8D3' : data.id === 'venus' ? '#E8C991' : data.glowColor}
+                  transparent
+                  opacity={0.18}
+                  blending={THREE.AdditiveBlending}
+                  side={THREE.BackSide}
+                />
+              </mesh>
+            )}
 
-            {/* Planetary Rings (e.g. Saturn, Uranus) */}
+            {/* Saturn's Photorealistic Rings with Cassini Division */}
             {data.hasRings && data.ringsRadiusInner && data.ringsRadiusOuter && (
               <SaturnRings
                 innerRadius={data.ringsRadiusInner}
                 outerRadius={data.ringsRadiusOuter}
-                color={data.ringColor}
               />
             )}
 
-            {/* Earth's Moon */}
-            {data.hasMoons && data.id === 'earth' && (
+            {/* Earth's Moon with Authentic NASA LRO Mare and Craters */}
+            {data.hasMoons && data.id === 'earth' && moonTextures && (
               <group ref={moonOrbitRef}>
                 <mesh position={[data.radius + 1.8, 0, 0]}>
-                  <sphereGeometry args={[0.3, 20, 20]} />
-                  <meshStandardMaterial color="#CCCCCC" roughness={0.9} />
+                  <sphereGeometry args={[0.32, 32, 32]} />
+                  <meshStandardMaterial
+                    map={moonTextures.map}
+                    bumpMap={moonTextures.bumpMap}
+                    bumpScale={0.025}
+                    roughness={0.96}
+                    metalness={0.04}
+                  />
                 </mesh>
               </group>
             )}
@@ -202,7 +228,7 @@ export function Planet({
             </mesh>
           )}
 
-          {/* 3. 3D Planet Sign / Navigation Beacon */}
+          {/* 3D Planet Sign / Navigation Beacon */}
           {showSigns && (
             <PlanetSign
               planet={data}

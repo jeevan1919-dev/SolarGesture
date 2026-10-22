@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { PlanetData } from '../../types/solar';
 import { PlanetSign } from './PlanetSign';
+import { planetTextureGenerator } from '../../services/planetTextureGenerator';
 
 interface SunProps {
   data: PlanetData;
@@ -28,48 +29,22 @@ export function Sun({
   const activeColor = starColor || data.color;
   const activeGlow = starGlow || data.glowColor;
 
-  // Procedural solar granule texture
+  // Authentic NASA SOHO/SDO solar photosphere map
   const sunTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d')!;
-
-    // Solar plasma gradient
-    const grad = ctx.createLinearGradient(0, 0, 0, 256);
-    grad.addColorStop(0, activeColor);
-    grad.addColorStop(0.5, '#FFF2A7');
-    grad.addColorStop(1, activeColor);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 512, 256);
-
-    // Churning granules / sunspots
-    ctx.fillStyle = 'rgba(215, 60, 0, 0.45)';
-    for (let i = 0; i < 90; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 256;
-      const r = 3 + Math.random() * 9;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.wrapS = THREE.RepeatWrapping;
-    return tex;
-  }, [activeColor]);
+    return planetTextureGenerator.loadNasaTexture('/textures/sunmap.jpg', true);
+  }, []);
 
   useFrame((_, delta) => {
     if (meshRef.current) {
       meshRef.current.rotation.y += data.rotationSpeed * delta * 60;
     }
     if (glowRef.current) {
-      glowRef.current.rotation.z -= 0.003;
-      const scale = 1.15 + Math.sin(Date.now() * 0.002) * 0.02;
+      glowRef.current.rotation.z -= 0.002;
+      const scale = 1.08 + Math.sin(Date.now() * 0.0015) * 0.015;
       glowRef.current.scale.set(scale, scale, scale);
     }
     if (coronaRef.current) {
-      coronaRef.current.rotation.y += 0.001;
+      coronaRef.current.rotation.y += 0.0008;
     }
   });
 
@@ -78,12 +53,12 @@ export function Sun({
       {/* Central Omnidirectional Solar Radiance Light */}
       <pointLight
         color={activeColor}
-        intensity={4.2}
-        distance={350}
-        decay={1.1}
+        intensity={4.5}
+        distance={450}
+        decay={1.05}
       />
 
-      {/* Core Star Sphere with Procedural Plasma Map */}
+      {/* Photorealistic NASA Solar Photosphere */}
       <mesh
         ref={meshRef}
         onClick={(e) => {
@@ -98,32 +73,32 @@ export function Sun({
           document.body.style.cursor = 'auto';
         }}
       >
-        <sphereGeometry args={[data.radius, 48, 48]} />
+        <sphereGeometry args={[data.radius, 64, 64]} />
         <meshBasicMaterial
           map={sunTexture}
           color={activeColor}
         />
       </mesh>
 
-      {/* Inner Corona Glow Layer */}
+      {/* Natural Solar Corona Flare Layer */}
       <mesh ref={glowRef}>
-        <sphereGeometry args={[data.radius * 1.15, 32, 32]} />
+        <sphereGeometry args={[data.radius * 1.08, 48, 48]} />
         <meshBasicMaterial
           color={activeGlow}
           transparent
-          opacity={0.45}
+          opacity={0.35}
           blending={THREE.AdditiveBlending}
           side={THREE.BackSide}
         />
       </mesh>
 
-      {/* Outer Atmospheric Flare Aura */}
+      {/* Subtle Outer Coronal Atmosphere */}
       <mesh ref={coronaRef}>
-        <sphereGeometry args={[data.radius * 1.38, 32, 32]} />
+        <sphereGeometry args={[data.radius * 1.25, 36, 36]} />
         <meshBasicMaterial
           color={activeColor}
           transparent
-          opacity={0.16}
+          opacity={0.10}
           blending={THREE.AdditiveBlending}
           side={THREE.BackSide}
         />
@@ -132,7 +107,7 @@ export function Sun({
       {/* Selection Reticle if Selected */}
       {isSelected && (
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[data.radius * 1.5, data.radius * 1.58, 64]} />
+          <ringGeometry args={[data.radius * 1.45, data.radius * 1.53, 64]} />
           <meshBasicMaterial color="#00F0FF" side={THREE.DoubleSide} />
         </mesh>
       )}
