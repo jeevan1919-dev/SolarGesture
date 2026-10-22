@@ -7,16 +7,56 @@ export type PlanetId =
   | 'jupiter'
   | 'saturn'
   | 'uranus'
-  | 'neptune';
+  | 'neptune'
+  // Exoplanet Multiverse IDs
+  | 'trappist1e'
+  | 'kepler452b'
+  | 'cancri55e'
+  | 'hd189733b'
+  | 'proximab';
+
+export type UniverseId = 'prime' | 'cyberpunk' | 'inferno' | 'cryo' | 'exoplanets';
+
+export interface UniverseTheme {
+  id: UniverseId;
+  name: string;
+  subtitle: string;
+  description: string;
+  badge: string;
+  starColor: string;
+  starGlow: string;
+  ambientLightColor: string;
+  ambientIntensity: number;
+  spaceBackgroundColor: string;
+  orbitLineColor: string;
+  hudAccentColor: string;
+  warpEffectColor: string;
+}
+
+export interface MoonInfo {
+  name: string;
+  diameterKm: number;
+  orbitalPeriodDays: number;
+  highlight: string;
+}
+
+export interface SpaceMission {
+  name: string;
+  agency: string;
+  year: string;
+  achievement: string;
+}
 
 export interface PlanetData {
   id: PlanetId;
   name: string;
+  glyph: string; // Astronomical symbol e.g. ☉, ☿, ♀, ⊕, ♂, ♃, ♄, ♅, ♆
   tagline: string;
-  category: 'Star' | 'Terrestrial Planet' | 'Gas Giant' | 'Ice Giant';
+  category: 'Star' | 'Terrestrial Planet' | 'Gas Giant' | 'Ice Giant' | 'Exoplanet' | 'Super-Earth' | 'Lava Planet';
   color: string;
   glowColor: string;
   accentColor: string;
+  surfaceType: 'sun' | 'rocky' | 'cloudy' | 'earth' | 'mars' | 'gas_bands' | 'saturn_bands' | 'ice_blue' | 'deep_blue' | 'lava' | 'crystal';
   radius: number; // visual scale in Three.js units
   actualRadiusKm: number;
   orbitDistance: number; // visual scale
@@ -28,16 +68,27 @@ export interface PlanetData {
   axialTiltDeg: number; // tilt in degrees
   temperatureAvgC: number;
   gravityMps2: number;
+  escapeVelocityKps: number;
+  atmosphericPressure: string;
+  surfaceAreaMillionKm2: number;
   moonsCount: number;
   atmosphere: string[];
   description: string;
   geology: string;
+  habitability: {
+    score: number; // 0 to 100
+    verdict: string;
+    details: string;
+  };
+  moonsList?: MoonInfo[];
+  missions?: SpaceMission[];
   funFacts: string[];
   hasRings?: boolean;
   ringsRadiusInner?: number;
   ringsRadiusOuter?: number;
   ringColor?: string;
   hasMoons?: boolean;
+  hasClouds?: boolean;
 }
 
 export type GestureType = 

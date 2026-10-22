@@ -1,9 +1,10 @@
 import { useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import type { PlanetData } from '../../types/solar';
 import { SaturnRings } from './SaturnRings';
+import { PlanetSign } from './PlanetSign';
+import { planetTextureGenerator } from '../../services/planetTextureGenerator';
 
 interface PlanetProps {
   data: PlanetData;
@@ -11,9 +12,10 @@ interface PlanetProps {
   isPaused: boolean;
   speedMultiplier: number;
   showOrbits: boolean;
-  showLabels: boolean;
+  showSigns: boolean;
   onSelect: (planet: PlanetData) => void;
   registerPlanetMesh?: (id: string, getPosition: () => THREE.Vector3) => void;
+  orbitLineColor?: string;
 }
 
 export function Planet({
@@ -22,24 +24,36 @@ export function Planet({
   isPaused,
   speedMultiplier,
   showOrbits,
-  showLabels,
+  showSigns,
   onSelect,
-  registerPlanetMesh
+  registerPlanetMesh,
+  orbitLineColor
 }: PlanetProps) {
   const orbitGroupRef = useRef<THREE.Group>(null);
   const planetMeshRef = useRef<THREE.Mesh>(null);
+  const cloudsMeshRef = useRef<THREE.Mesh>(null);
   const moonOrbitRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
 
-  // Initial random orbit angle offset so planets don't all align in a straight line at start
-  const initialAngle = useMemo(() => Math.random() * Math.PI * 2, []);
+  // Generate realistic procedural texture for planet
+  const surfaceTexture = useMemo(() => {
+    return planetTextureGenerator.getTexture(
+      data.surfaceType,
+      data.color,
+      data.accentColor
+    );
+  }, [data.surfaceType, data.color, data.accentColor]);
 
-  // Set initial orbit position
-  useMemo(() => {
-    if (orbitGroupRef.current) {
-      orbitGroupRef.current.rotation.y = initialAngle;
+  // Clouds texture for planets with cloud covers (Earth)
+  const cloudsTexture = useMemo(() => {
+    if (data.hasClouds) {
+      return planetTextureGenerator.getEarthClouds();
     }
-  }, [initialAngle]);
+    return null;
+  }, [data.hasClouds]);
+
+  // Initial random orbit angle offset so planets don't start in a single straight row
+  const initialAngle = useMemo(() => Math.random() * Math.PI * 2, []);
 
   // Register position getter for camera focus
   useMemo(() => {
@@ -67,7 +81,12 @@ export function Planet({
       planetMeshRef.current.rotation.y += data.rotationSpeed * delta * 50;
     }
 
-    // 3. Moon orbit around Earth
+    // 3. Clouds differential rotation for realistic planetary atmosphere
+    if (cloudsMeshRef.current && !isPaused) {
+      cloudsMeshRef.current.rotation.y += data.rotationSpeed * delta * 60;
+    }
+
+    // 4. Moon orbit around Earth
     if (moonOrbitRef.current && !isPaused) {
       moonOrbitRef.current.rotation.y += 0.05 * speedMultiplier * delta * 25;
     }
@@ -80,9 +99,9 @@ export function Planet({
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[data.orbitDistance - 0.08, data.orbitDistance + 0.08, 128]} />
           <meshBasicMaterial
-            color={isSelected ? '#00F0FF' : hovered ? '#48E5C2' : '#3A506B'}
+            color={isSelected ? '#00F0FF' : hovered ? '#48E5C2' : orbitLineColor || '#3A506B'}
             transparent
-            opacity={isSelected ? 0.8 : hovered ? 0.6 : 0.25}
+            opacity={isSelected ? 0.9 : hovered ? 0.7 : 0.28}
             side={THREE.DoubleSide}
           />
         </mesh>
@@ -94,7 +113,7 @@ export function Planet({
         <group position={[data.orbitDistance, 0, 0]}>
           {/* Axial Tilt Group */}
           <group rotation={[0, 0, (data.axialTiltDeg * Math.PI) / 180]}>
-            {/* The Planet Sphere Mesh */}
+            {/* The Realistic Planet Sphere Mesh */}
             <mesh
               ref={planetMeshRef}
               onClick={(e) => {
@@ -111,23 +130,38 @@ export function Planet({
                 document.body.style.cursor = 'auto';
               }}
             >
-              <sphereGeometry args={[data.radius, 36, 36]} />
+              <sphereGeometry args={[data.radius, 48, 48]} />
               <meshStandardMaterial
-                color={data.color}
-                roughness={0.7}
-                metalness={0.1}
+                map={surfaceTexture}
+                roughness={data.category === 'Gas Giant' || data.category === 'Ice Giant' ? 0.4 : 0.8}
+                metalness={0.08}
                 emissive={hovered || isSelected ? data.accentColor : '#000000'}
-                emissiveIntensity={hovered || isSelected ? 0.45 : 0}
+                emissiveIntensity={hovered || isSelected ? 0.35 : 0}
               />
             </mesh>
 
-            {/* Atmosphere / Glow Aura */}
+            {/* Earth's Dynamic Atmosphere Cloud Layer */}
+            {data.hasClouds && cloudsTexture && (
+              <mesh ref={cloudsMeshRef}>
+                <sphereGeometry args={[data.radius * 1.025, 40, 40]} />
+                <meshStandardMaterial
+                  map={cloudsTexture}
+                  transparent
+                  opacity={0.75}
+                  blending={THREE.NormalBlending}
+                  depthWrite={false}
+                />
+              </mesh>
+            )}
+
+            {/* Atmosphere / Fresnel Rim Glow Layer */}
             <mesh>
-              <sphereGeometry args={[data.radius * 1.05, 24, 24]} />
+              <sphereGeometry args={[data.radius * 1.05, 32, 32]} />
               <meshBasicMaterial
                 color={data.glowColor}
                 transparent
-                opacity={hovered || isSelected ? 0.35 : 0.12}
+                opacity={hovered || isSelected ? 0.4 : 0.15}
+                blending={THREE.AdditiveBlending}
                 side={THREE.BackSide}
               />
             </mesh>
@@ -145,17 +179,17 @@ export function Planet({
             {data.hasMoons && data.id === 'earth' && (
               <group ref={moonOrbitRef}>
                 <mesh position={[data.radius + 1.8, 0, 0]}>
-                  <sphereGeometry args={[0.3, 16, 16]} />
+                  <sphereGeometry args={[0.3, 20, 20]} />
                   <meshStandardMaterial color="#CCCCCC" roughness={0.9} />
                 </mesh>
               </group>
             )}
           </group>
 
-          {/* Selection Target Ring */}
+          {/* Selection Target Reticle Ring */}
           {isSelected && (
             <mesh rotation={[-Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[data.radius * 1.4, data.radius * 1.48, 48]} />
+              <ringGeometry args={[data.radius * 1.45, data.radius * 1.54, 48]} />
               <meshBasicMaterial color="#00F0FF" side={THREE.DoubleSide} />
             </mesh>
           )}
@@ -163,39 +197,19 @@ export function Planet({
           {/* Hover Pulsing Ring */}
           {hovered && !isSelected && (
             <mesh rotation={[-Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[data.radius * 1.25, data.radius * 1.3, 32]} />
-              <meshBasicMaterial color="#48E5C2" transparent opacity={0.6} side={THREE.DoubleSide} />
+              <ringGeometry args={[data.radius * 1.25, data.radius * 1.32, 36]} />
+              <meshBasicMaterial color="#48E5C2" transparent opacity={0.65} side={THREE.DoubleSide} />
             </mesh>
           )}
 
-          {/* 3. Planet Floating Tag / Label */}
-          {showLabels && (
-            <Html
-              position={[0, data.radius + 1.2, 0]}
-              center
-              distanceFactor={45}
-              style={{
-                pointerEvents: 'none',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <div
-                className={`px-2 py-0.5 rounded-full text-xs font-heading font-medium tracking-wide flex items-center gap-1.5 shadow-lg border backdrop-blur-md ${
-                  isSelected
-                    ? 'bg-space-electric/20 text-space-electric border-space-electric shadow-glow-cyan'
-                    : hovered
-                    ? 'bg-space-cyan/20 text-space-cyan border-space-cyan'
-                    : 'bg-space-deep/80 text-slate-300 border-white/10'
-                }`}
-              >
-                <span
-                  className="w-1.5 h-1.5 rounded-full"
-                  style={{ backgroundColor: data.glowColor }}
-                />
-                {data.name}
-              </div>
-            </Html>
+          {/* 3. 3D Planet Sign / Navigation Beacon */}
+          {showSigns && (
+            <PlanetSign
+              planet={data}
+              isSelected={isSelected}
+              onSelect={onSelect}
+              accentColor={data.glowColor}
+            />
           )}
         </group>
       </group>

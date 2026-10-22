@@ -10,7 +10,8 @@ import {
   Camera,
   CameraOff,
   Sparkles,
-  Info
+  Info,
+  MapPin
 } from 'lucide-react';
 import { soundService } from '../../services/soundEffects';
 
@@ -21,8 +22,8 @@ interface ControlBarProps {
   onChangeSpeed: (speed: number) => void;
   showOrbits: boolean;
   onToggleOrbits: () => void;
-  showLabels: boolean;
-  onToggleLabels: () => void;
+  showSigns: boolean;
+  onToggleSigns: () => void;
   showAsteroids: boolean;
   onToggleAsteroids: () => void;
   onResetView: () => void;
@@ -32,6 +33,7 @@ interface ControlBarProps {
   onToggleSound: () => void;
   onOpenGuide: () => void;
   onOpenScaleModal: () => void;
+  onOpenMultiverse: () => void;
 }
 
 export function ControlBar({
@@ -41,8 +43,8 @@ export function ControlBar({
   onChangeSpeed,
   showOrbits,
   onToggleOrbits,
-  showLabels,
-  onToggleLabels,
+  showSigns,
+  onToggleSigns,
   showAsteroids,
   onToggleAsteroids,
   onResetView,
@@ -51,7 +53,8 @@ export function ControlBar({
   isMuted,
   onToggleSound,
   onOpenGuide,
-  onOpenScaleModal
+  onOpenScaleModal,
+  onOpenMultiverse
 }: ControlBarProps) {
   const speeds = [0.25, 0.5, 1, 2, 4];
 
@@ -123,18 +126,18 @@ export function ControlBar({
           <Orbit className="w-4 h-4" />
         </button>
 
-        {/* 5. Toggle Labels */}
+        {/* 5. Toggle 3D Planet Signs & Beacons */}
         <button
           onClick={() => {
             soundService.playClick();
-            onToggleLabels();
+            onToggleSigns();
           }}
           className={`p-2 rounded-xl transition-colors ${
-            showLabels ? 'bg-space-violet/20 text-space-violet' : 'bg-white/5 text-slate-400'
+            showSigns ? 'bg-space-electric/20 text-space-electric' : 'bg-white/5 text-slate-400'
           }`}
-          title="Toggle Planet Names"
+          title="Toggle 3D Planet Selection Signs & Beacons"
         >
-          <Tag className="w-4 h-4" />
+          <MapPin className="w-4 h-4" />
         </button>
 
         {/* 6. Toggle Asteroids */}
@@ -148,12 +151,24 @@ export function ControlBar({
           }`}
           title="Toggle Asteroid Belt"
         >
-          <Sparkles className="w-4 h-4" />
+          <Tag className="w-4 h-4" />
+        </button>
+
+        {/* 7. Multiverse Portal Trigger */}
+        <button
+          onClick={() => {
+            soundService.playClick();
+            onOpenMultiverse();
+          }}
+          className="p-2 rounded-xl bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 border border-pink-500/40 hover:scale-105 transition-all"
+          title="Switch Universe / Open Multiverse Gateway"
+        >
+          <Sparkles className="w-4 h-4 animate-spin-slow" />
         </button>
 
         <div className="w-[1px] h-6 bg-white/10 mx-0.5 hidden sm:block" />
 
-        {/* 7. Toggle Webcam Hand Tracking */}
+        {/* 8. Toggle Webcam Hand Tracking */}
         <button
           onClick={() => {
             soundService.playClick();
@@ -169,7 +184,7 @@ export function ControlBar({
           {handTrackingEnabled ? <Camera className="w-4 h-4" /> : <CameraOff className="w-4 h-4" />}
         </button>
 
-        {/* 8. Toggle Sound */}
+        {/* 9. Toggle Sound */}
         <button
           onClick={() => {
             soundService.playClick();
@@ -181,7 +196,7 @@ export function ControlBar({
           {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-space-cyan" />}
         </button>
 
-        {/* 9. Scale Disclaimer */}
+        {/* 10. Scale Disclaimer */}
         <button
           onClick={() => {
             soundService.playClick();
@@ -193,7 +208,7 @@ export function ControlBar({
           <Info className="w-4 h-4" />
         </button>
 
-        {/* 10. Gesture Guide Modal Trigger */}
+        {/* 11. Gesture Guide Modal Trigger */}
         <button
           onClick={() => {
             soundService.playClick();
